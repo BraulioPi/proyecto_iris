@@ -1,0 +1,219 @@
+---
+title: "EC2022"
+output: html_document
+date: "2022-11-17"
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(gt)
+library(tidymodels)
+library(base)
+library(recipes)
+library(stats)
+library(generics)
+library(patchwork)
+library(parsnip)
+library(glmnet)
+library(datasets)
+library(shiny)
+library(xgboost)
+library(caret)
+```
+
+```{r}
+data(iris)
+summary(iris)
+iris1<-iris
+split1<-initial_split(iris1,prop=0.8)
+entrena1<-training(split1)
+prueba1<-testing(split1)
+```
+## Visualización
+
+```{r}
+
+q1<-iris%>%ggplot(aes(y=Sepal.Length,x=Sepal.Width))+geom_point(aes(color=Species))
+q2<-iris%>%ggplot(aes(y=Petal.Length,x=Petal.Width))+geom_point(aes(color=Species))
+q1+q2
+```
+
+## Preparación de receta
+
+```{r pressure, echo=FALSE}
+
+#preparación de receta
+receta1<-iris%>%recipe(Species~ Petal.Length + Petal.Width + Sepal.Length + Sepal.Width)
+receta1prep<-prep(receta1)
+bake1<-bake(receta1prep,entrena1)
+```
+
+#Preparación de modelo XGBOOST y ajuste
+
+```{r pressure, echo=FALSE}
+#XGboost
+boost_iris1<-function(learn_rate0=0.02,trees0=2,mtry0=2,tree_depth0=5){
+boost1<-boost_tree(learn_rate = learn_rate0, trees = trees0, mtry = mtry0, tree_depth = tree_depth0)%>% 
+  set_engine("xgboost") %>% 
+  set_mode("classification")
+
+}
+
+boosting1<-boost_iris()
+
+#funciones para gridsearch (pt1)
+
+#metricas1<-metric_set(yardstick::precision,yardstick::recall,sens,spec)
+#vfold1<-vfold_cv(iris,v=5)
+#valores_grid <- expand_grid(learn_rate=seq(0,0.2,0.01),mtry=seq(2,10,1), trees=seq(2,15,1))
+
+
+#workflow
+flujo1<-workflow() %>% add_recipe(receta1) %>% add_model(boosting1)
+
+#funciones usadas en ajuste de tune_grid (gridsearch) (pt 2)
+
+#grid11<-tune_grid(flujo1,resamples = vfold1,grid = valores_grid,metrics = metricas1)
+#metricas1<-collect_metrics(grid11)
+#mejor<-select_best(grid11,metric='precision')
+
+ajuste1<-fit(flujo1,entrena1)
+predicentr1<-predict(ajuste1,entrena1)%>%pull(.pred_class)
+predicprue1 <-predict(ajuste1,prueba1)%>%pull(.pred_class)
+
+```
+
+#Evaluación de desempeño
+
+```{r}
+
+aevaluar1prue<-data.frame(verdad=prueba1$Species,estimado=predicprue1)
+aevaluar1entr<-data.frame(verdad=entrena1$Species,estimado=predicentr1)
+
+metricasfunc<-function(df){
+  prec1<-df%>%yardstick::precision(verdad,estimado)%>%pull(.estimate)
+  recall1<-df%>%yardstick::recall(verdad,estimado)%>%pull(.estimate)
+  sens1<-df%>%yardstick::sens(verdad,estimado)%>%pull(.estimate)
+  spec1<-df%>%yardstick::spec(verdad,estimado)%>%pull(.estimate)
+  data.frame(precision=prec1,recall=recall1,sensibilidad=sens1,especificidad=spec1)
+}
+
+bind_rows("entrenamiento"=metricasfunc(aevaluar1entr),"prueba"=metricasfunc(aevaluar1prue),.id="conjuntos")
+```
+## Matriz de confusión para el set de prueba
+```{r}
+caret::confusionMatrix(aevaluar1prue$estimado,aevaluar1$verdad)
+tipodeflor1<-data.frame(flor=c("setosa","virginica","versicolor"),tipo=c("Aunque seas segura en la vida real, te escondes cuando estás bajo presión romántica. \n Es normal estar nerviosa, pero no dejes que los nervios nublen lo increíble que eres",
+  "Eres increíble en una cita. Tu humor puede hacerte menos awkward, pero tampoco molestes mucho a tu date.",
+  "En las citas eres tú la que toma las riendas (¡yiii-ha!). Una mujer a cargo es sexy, pero no todo gira a tu alrededor."))
+```
+
+
+```{r}
+
+```
+
+```{r}
+ui1 <- fluidPage(
+
+  # App title ----
+  titlePanel("App para modelo de clasificación de tipo de flor iris"),
+sidebarLayout(
+
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+      h1("Para añadir observaciones"),
+      fileInput(inputId = "boton",label="adjuntar csv en orden Sepal.Length,Sepal.Width,Petal.Length,Petal.Width"),
+      
+      h1("Para reentrenar el modelo"),
+      # Input: Slider for the number of bins ----
+      numericInput(inputId = "learn1",
+                  label = "Tasa de aprendizaje (inicial=0.02)",0.02,
+                  min = 0.001,
+                  max = 0.2),
+    
+    numericInput(inputId="trees1",
+                 label="Núm. árboles (inicial:2)",2,
+                 min=1,
+                 max=20),
+    
+    numericInput(inputId="mtry1",
+                 label="Núm. de variables por split (inicial:2)",2,
+                 min=1,
+                 max=10),
+
+    numericInput(inputId="tree_depth1",
+                 label="Núm. hojas (inicial:5)",5,
+                 min=2,
+                 max=20),
+    actionButton(inputId="reentrena_modelo",
+                 label="Reentrenar"),
+    
+    h1("Qué tipo de flor eres"),
+    numericInput(inputId="sepal_length1",
+                 label="Sepal Length",7.0,
+                 min=4,
+                 max=8),
+    numericInput(inputId="sepal_width1",
+                 label="Sepal Width",3.2,
+                 min=2,
+                 max=5),
+    numericInput(inputId="petal_length1",
+                 label="Petal Length",4.7,
+                 min=1,
+                 max=7),
+    numericInput(inputId="petal_width1",
+                 label="Petal Width",1.5,
+                 min=0.1,
+                 max=2.5),
+    actionButton(inputId="predecir_modelo",
+                 label="Predecir")),
+    # Main panel for displaying outputs ----
+    mainPanel(
+
+      # Output: Histogram ----
+      tableOutput(outputId = "metricas0"),
+      br(), br(),
+      textOutput(outputId="tipoflor0"),
+      tableOutput(outputId="resultados0")
+
+    )
+  )
+)
+
+server <- function(input, output) {
+
+  randomVals <- eventReactive(input$reentrena_modelo, {
+     hiper1<-data.frame(learn00=input$learn1,
+                    trees00=input$trees1,
+                    mtry00=input$mtry1,
+                    tree_depth00=input$tree_depth1)
+    boosting0<-hiper1%>%boost_iris1(learn_rate0=learn00,
+                                    trees0 = trees00,
+                                    mtry0 = mtry00,
+                                    tree_depth0 = tree_depth00)
+      flujo0<-workflow() %>% add_recipe(receta1) %>% add_model(boosting0)
+
+ajuste0<-fit(flujo0,entrena1)
+predicentr1<-predict(ajuste0,entrena1)%>%pull(.pred_class)
+predicprue1<-predict(ajuste0,prueba1)%>%pull(.pred_class)
+
+aevaluar1prue<-data.frame(verdad=prueba1$Species,estimado=predicprue1)
+aevaluar1entr<-data.frame(verdad=entrena1$Species,estimado=predicentr1)
+  })
+
+  output$metricas0 <- renderTable({
+  bind_rows("entrenamiento"=metricasfunc(aevaluar1entr),"prueba"=metricasfunc(aevaluar1prue),.id="conjuntos")
+  })
+  
+  output$tipoflor0<-renderText({
+    inputsflor1<-data.frame(Sepal.Length=input$sepal_length1,Sepal.Width=input$sepal_width1,Petal.Length=input$petal_length1,Petal.Width=input$petal_width1)
+    predict(ajuste0,inputsflor1) %>%pull(.pred_class)
+  })
+}
+
+
+
+shinyApp(ui=ui1,server=server1)
+```
+
