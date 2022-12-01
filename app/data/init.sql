@@ -1,5 +1,4 @@
 create table iris(
-    Id int,
     SepalLengthCm float,
     SepalWidthCm float,
     PetalLengthCm float,

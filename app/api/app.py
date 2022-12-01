@@ -23,8 +23,8 @@ def home():
 
 
 #a partir de aqui falta modificar unas cosas
-@app.route('/users', methods=["POST", "GET", "DELETE", "PATCH"])
-def user():
+@app.route('/iris', methods=["POST", "GET", "DELETE", "PATCH"])
+def florecita():
     if request.method == 'GET':
         cur = conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
         user_id = request.args.get("id")
@@ -76,4 +76,3 @@ def flights():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True, port=8080)
-df.columns = [i.lower() for i in df.columns]
