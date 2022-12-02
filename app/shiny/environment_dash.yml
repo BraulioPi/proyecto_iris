@@ -1,0 +1,19 @@
+name: dash_iris
+channels:
+  - defaults
+dependencies:
+  - autopep8
+  - flake8
+  - jedi
+  - pandas
+  - pip
+  - pylint
+  - scikit-learn
+  - flask
+  - psycopg2
+  - sqlalchemy
+  - flask-sqlalchemy
+  - xgboost
+  - seaborn
+  - matplotlib
+  - shiny
