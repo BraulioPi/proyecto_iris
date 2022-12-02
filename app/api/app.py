@@ -4,14 +4,25 @@ import psycopg2
 import psycopg2.extras
 import os
 import pandas as pd
+import time
 
-
+print("API ACTIVADA")
 # "motor://user:password@host:port/database"
 #ojo aquí estamos metiendo las variables de ambiente (el archivo.env por medio del modulo os)
 database_uri = f'postgresql://{os.environ["PGUSR"]}:{os.environ["PGPASS"]}@{os.environ["PGHOST"]}:5432/{os.environ["PGDB"]}'
 
 app = Flask(__name__)
-conn = psycopg2.connect(database_uri)
+contador = 0
+while contador <5:
+    try:
+        conn = psycopg2.connect(database_uri)
+        print("conexión establecida")
+        break
+    except Exception as e:
+        print("fallo conexión, volviendo a intentar")  
+        contador = contador + 1
+        time.sleep(5)  
+
 #ponemos una manera de reiniciar la base-------------------------EXPERIMENTAL
 #hay que ponerle un input desde el shiny
 #cur = conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)

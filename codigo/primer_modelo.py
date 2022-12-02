@@ -13,7 +13,7 @@ from shiny import App, render, ui, reactive
 
 #primero la carga de datos 
 #aqui va la conexion al sql (postgress)
-df = pd.read_csv("../datos/iris.csv").drop("Id",axis = 1)
+df = pd.read_csv("../datos/iris.csv").drop("id",axis = 1)
 df.columns = [i.lower() for i in df.columns]
 
 
