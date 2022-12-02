@@ -73,8 +73,8 @@ def florecita():
         flor = json.loads(request.data)
         cur = conn.cursor()
         cur.execute(
-            "insert into iris (SepalLengthCm,SepalWidthCm ,PetalLengthCm ,PetalWidthCm ,Species) values (%s, %s, %s, %s, %s)",
-            (flor[0]["SepalLengthCm"], flor[0]["SepalWidthCm"], flor[0]["PetalLengthCm"],flor[0]["PetalWidthCm"], flor[0]["Species"]),
+            "insert into iris (sepallengthcm, sepalwidthcm , petallengthcm , petalwidthcm , species) values (%s, %s, %s, %s, %s)",
+            (flor[0]["sepallengthcm"], flor[0]["sepalwidthcm"], flor[0]["petallengthcm"],flor[0]["petalwidthcm"], flor[0]["species"]),
         )
         conn.commit()
         cur.execute("SELECT LASTVAL()")#muestra el ultimo valor de id
@@ -93,8 +93,8 @@ def florecita():
         cur = conn.cursor()
         flor_id = request.args.get("id")
         cur.execute(
-            "update iris set (SepalLengthCm,SepalWidthCm ,PetalLengthCm ,PetalWidthCm ,Species) = (%s,%s,%s,%s,%s) where id=%s ",
-            (flor[0]["SepalLengthCm"], flor[0]["SepalWidthCm"], flor[0]["PetalLengthCm"],flor[0]["PetalWidthCm"], flor[0]["Species"], flor_id),
+            "update iris set (sepallengthcm, sepalwidthcm , petallengthcm , petalwidthcm , species) = (%s,%s,%s,%s,%s) where id=%s ",
+            (flor[0]["sepallengthcm"], flor[0]["sepalwidthcm"], flor[0]["petallengthcm"],flor[0]["petalwidthcm"], flor[0]["species"], flor_id),
         )
         conn.commit()
         cur.close()
