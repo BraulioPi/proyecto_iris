@@ -7,19 +7,23 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
-
+import os
+import requests
 #estos son los necesarios para shiny
 from shiny import App, render, ui, reactive
 
-#primero la carga de datos 
-#aqui va la conexion al sql (postgress)
-df = pd.read_csv("/app/iris.csv").drop("id",axis = 1)
+
+
+#variable de entorno para pruebas y por si acaso le pone el valor predeterminado
+api_host  = os.getenv("API_HOST", "http://0.0.0.0:8080")
+#cargando los datos desde la API
+respuesta = requests.get(api_host)
+data_raw  = respuesta.json()
+df        = pd.DataFrame.from_dict(pd.json_normalize(data_raw), orient="columns")
 df.columns = [i.lower() for i in df.columns]
-
-
+print("DATOS CARGADOS, APLICACION FUNCIONANDO")
 #preprocesamiento de datos
 dic        = {'Iris-setosa':0,'Iris-versicolor':1,'Iris-virginica':2}
-
 df["species_codi"]  = df["species"].map(dic)
 X                   = df[["sepallengthcm","petallengthcm"]]
 y                   = df["species_codi"]
@@ -30,6 +34,11 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.3, random_s
 #por ahora se selecciona modelo(opciones de inputs)
 opciones                         = {"rf":"Random Forest",
                                     "xgb":"XGBoost"}
+
+
+
+
+
 
 
 
@@ -103,6 +112,4 @@ def server(input, output, session):
 
 # Connect everything
 app = App(app_ui, server)
-
-
 

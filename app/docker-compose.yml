@@ -19,6 +19,14 @@ services:
     ports:
        - 8080:8080
     depends_on:
-      - "db"    
+      - "db"  
+  dash_board_perron:
+    build: ./shiny
+    env_file:
+      - ".env"   
+    ports:
+      - 4999:4999 #compu-contenedor
+    depends_on:
+      - "web"  
 volumes:
   pg_api:
