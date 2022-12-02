@@ -82,14 +82,15 @@ def florecita():
 
     if request.method == "POST":
         flor = json.loads(request.data)
+        print(flor)
         cur = conn.cursor()
         cur.execute(
-            "insert into iris (sepallengthcm, sepalwidthcm , petallengthcm , petalwidthcm , species) values (%s, %s, %s, %s, %s)",
-            (flor[0]["sepallengthcm"], flor[0]["sepalwidthcm"], flor[0]["petallengthcm"],flor[0]["petalwidthcm"], flor[0]["species"]),
+            "insert into iris (id,sepallengthcm, sepalwidthcm , petallengthcm , petalwidthcm , species) values (%s,%s, %s, %s, %s, %s)",
+            (flor[0]["id"],flor[0]["sepallengthcm"], flor[0]["sepalwidthcm"], flor[0]["petallengthcm"],flor[0]["petalwidthcm"], flor[0]["species"]),
         )
         conn.commit()
-        cur.execute("SELECT LASTVAL()")#muestra el ultimo valor de id
-        flor_id = cur.fetchone()[0]
+        #cur.execute("SELECT LASTVAL()")#muestra el ultimo valor de id
+        flor_id = flor[0]["id"]
         cur.close()
         return json.dumps({"flor_id": flor_id})
     if request.method == "DELETE":
@@ -100,7 +101,7 @@ def florecita():
         cur.close()
         return json.dumps({"flor_id": flor_id})
     if request.method == "PATCH":
-        user = json.loads(request.data)
+        flor = json.loads(request.data)
         cur = conn.cursor()
         flor_id = request.args.get("id")
         cur.execute(

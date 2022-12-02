@@ -9,13 +9,14 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 import os
 import requests
+import json
 #estos son los necesarios para shiny
 from shiny import App, render, ui, reactive
 
 
 
 #variable de entorno para pruebas y por si acaso le pone el valor predeterminado
-api_host  = os.getenv("API_HOST", "http://0.0.0.0:8080")
+api_host  = os.getenv("API_HOST", "http://0.0.0.0:8080")#esot no conecta
 #cargando los datos desde la API
 respuesta = requests.get(api_host)
 data_raw  = respuesta.json()

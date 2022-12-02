@@ -1,6 +1,6 @@
 -- creamos la tabla con un id creciente (parecido al identity para poder hacer mods por id)
 create table iris(
-    id serial Primary key,
+    id int,
     sepallengthcm float,
     sepalwidthcm float,
     petallengthcm float,
