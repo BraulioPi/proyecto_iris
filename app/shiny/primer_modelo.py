@@ -19,10 +19,10 @@ import datetime
 from shiny import App, render, ui, reactive
 
 
-
+print("generando conexión de aplicación shiny")
 #variable de entorno para pruebas y por si acaso le pone el valor predeterminado
 api_host  = os.getenv("API_HOST", "http://0.0.0.0:8080")#esot no conecta
-
+print("calculando variables para funcionamiento correcto")
 #carga de tabla para establecer ciertos valores para input de entrada
 def carga_data_completa(api_host):
     respuesta = requests.get(api_host+"/")
@@ -33,8 +33,22 @@ def carga_data_completa(api_host):
 def descarga_imagen(url_,nombre):
     wget.download(url_,out=nombre)
     print(f"imagen {nombre} descargada con exito")
+#cuantiles necesarios para hacer mapeo de funcionalidad beta    
+def calcula_cuantiles_beta(df_parametros):
+    lista_col = ['sepallengthcm', 'sepalwidthcm', 'petallengthcm', 'petalwidthcm']
+    base_df = pd.DataFrame()
+    base_df["index"] = [.1,.2,.3,.4,.5,.6,.7,.8,.9,1]
+    for i in lista_col:
+        pivot = df_parametros[i].quantile([.1,.2,.3,.4,.5,.6,.7,.8,.9,1]).reset_index()
+        base_df = base_df.merge(pivot,on=["index"],how='left')
+    base_df["respuesta"] = (base_df["index"] * 10).astype(int)
+    base_df              = base_df.drop("index",axis=1)
+    return base_df    
 
-df_parametros = carga_data_completa(api_host)    
+df_parametros   = carga_data_completa(api_host)    
+df_cuantiles    = calcula_cuantiles_beta(df_parametros)
+dict_cuantiles  = df_cuantiles.set_index(df_cuantiles["respuesta"]).drop("respuesta",axis=1)
+
 print("APLICACION FUNCIONANDO")
 
 
@@ -142,12 +156,26 @@ app_ui = ui.page_fluid(
         ui.input_numeric("predict_petalwidthcm", "Ancho de petalo", value=0),
         ui.input_action_button("btn_carga_predict","Predice con el modelo!"),
         ui.output_text_verbatim("carga_predice"),
-
-
+        ui.h1("FUNCIONALIDAD BETA: Responde 4 simples preguntas sobre tu personalidad y te decimos que tipo de flor eres. Selecciona del 1 al 10 que tan de acuerdo estás con la pregunta (1 es nada y 10 es muy de acuerdo)"),
+        ui.h4("Ojo: No guardamos datos, solo se los vendemos a algunos patrocinadores que respetan tu privacidad...."),
+        ui.h2("Pregunta 1"),
+        ui.input_slider("pregunta_1", "Selecciona a partir de que observacion quieres ver", min=1, max=10, value=1),
+        ui.h2("Pregunta 2"),
+        ui.input_slider("pregunta_2", "Selecciona a partir de que observacion quieres ver", min=1, max=10, value=1),
+        ui.h2("Pregunta 3"),
+        ui.input_slider("pregunta_3", "Selecciona a partir de que observacion quieres ver", min=1, max=10, value=1),
+        ui.h2("Pregunta 4"),
+        ui.input_slider("pregunta_4", "Selecciona a partir de que observacion quieres ver", min=1, max=10, value=1),
+        ui.input_action_button("btn_beta","Dime que flor soy!"),
+        ui.output_text_verbatim("muestra_tipo_flor"),
     id="container")
 )
 
-
+    
+        
+        
+        
+    
 # logica del servidor, esta madre es el backend de la app
 def server(input, output, session):
 
@@ -181,6 +209,38 @@ def server(input, output, session):
         df_cm               = pd.DataFrame(confusion_matrix(y_test, y_pred),index=target_names,columns=target_names)
 
         return resultados, df_cm, modelo
+
+    @reactive.Calc
+    @reactive.event(input.btn_beta)
+    def tipo_flor():
+        df        = df_parametros.copy()
+        #preprocesamiento de datos
+        dic         = {'Iris-setosa':0,'Iris-versicolor':1,'Iris-virginica':2}
+        dic_reverse = {0:'Iris-setosa',1:'Iris-versicolor',2:'Iris-virginica'}
+        df["species_codi"]  = df["species"].map(dic)
+        X                   = df.drop(["species","species_codi","id"],axis=1)#df[["sepallengthcm","petallengthcm"]]
+        y                   = df["species_codi"]
+        #se hace fit de modelo para funcionalidad beta
+        modelo              = xg.XGBClassifier(random_state =0)
+        modelo.fit(X, y)
+        X_test              = pd.DataFrame()
+        #se mapea la respuesta al rango de las varaibles
+        X_test["sepallengthcm"] = [dict_cuantiles["sepallengthcm"][input.pregunta_1()]]
+        X_test["sepalwidthcm"]  = [dict_cuantiles["sepalwidthcm"][input.pregunta_2()]]
+        X_test["petallengthcm"] = [dict_cuantiles["petallengthcm"][input.pregunta_3()]]
+        X_test["petalwidthcm"]  = [dict_cuantiles["petalwidthcm"][input.pregunta_4()]] 
+        #reporte de resultados
+        y_pred                  = modelo.predict(X_test)
+        pred                    = dic_reverse[y_pred[0]]
+        return pred    
+
+    @output
+    @render.text
+    @reactive.event(input.btn_beta)
+    def muestra_tipo_flor():
+        pred   = tipo_flor()
+        
+        return f"Según nuestro poderoso modelo de I.A eres una {pred} !"    
     
     @output
     @render.table
@@ -246,16 +306,7 @@ def server(input, output, session):
 
     @output
     @render.plot
-    def imagen_florecita():
-        #url_ = "https://camo.githubusercontent.com/bb83e831a860664959470e38c56bdce981c84687eafe04346d112be09a8c0227/68747470733a2f2f692e696d6775722e636f6d2f505171594761572e706e67"
-        #try:
-        #    os.remove("florecitas.png")
-        #    descarga_imagen(url_,nombre="florecitas.png")
-        #    print("descargando imagen necesaria")
-        #except Exception as e:
-        #    print("no hay imagen a borrar")  
-        #    descarga_imagen(url_,nombre="florecitas.png")
-        #    print("descargando imagen necesaria")  
+    def imagen_florecita(): 
         img  = mpimg.imread('./images/florecitas.png')
         fig, ax = plt.subplots()
         ax2     = plt.imshow(img)
