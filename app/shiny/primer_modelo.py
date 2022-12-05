@@ -51,7 +51,7 @@ def calcula_cuantiles_beta(df_parametros):
 #pipeline de procesamiento para funcionamiento...
 df_parametros   = carga_data_completa(api_host)    
 df_cuantiles    = calcula_cuantiles_beta(df_parametros)
-dict_cuantiles  = df_cuantiles.set_index(df_cuantiles["respuesta"]).drop("respuesta",axis=1)
+dict_cuantiles  = df_cuantiles.set_index(df_cuantiles["respuesta"]).drop("respuesta",axis=1).to_dict()
 
 print("APLICACION FUNCIONANDO")
 
@@ -292,6 +292,7 @@ def server(input, output, session):
         X_test["sepalwidthcm"]  = [dict_cuantiles["sepalwidthcm"][input.pregunta_2()]]
         X_test["petallengthcm"] = [dict_cuantiles["petallengthcm"][input.pregunta_3()]]
         X_test["petalwidthcm"]  = [dict_cuantiles["petalwidthcm"][input.pregunta_4()]] 
+        print(X_test)
         #reporte de resultados
         y_pred                  = modelo.predict(X_test)
         pred                    = dic_reverse[y_pred[0]]
