@@ -22,38 +22,7 @@ while contador <5:
         print("fallo conexión, volviendo a intentar")  
         contador = contador + 1
         time.sleep(5)  
-
-#ponemos una manera de reiniciar la base-------------------------EXPERIMENTAL
-#hay que ponerle un input desde el shiny
-#cur = conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
-#cur.execute("select * from iris")
-#data = cur.fetchall()
-#creando un dataframe de pandas
-#cols = []
-#for elt in cur.description:cols.append(elt[0]);
-#df_respaldo = pd.DataFrame(data = data, columns=cols)
-#cur.close()
-#se hace el reemplazo
-#def insert_dato(conn, insert_req):
-#    cursor = conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
-#    cursor.execute(insert_req)
-#    conn.commit()
-#    cursor.close()
-
-#@app.route('/reinicio')
-#def reinicia_base(df_respaldo,conn):
-    #primero borramos la base 
-#    cur = conn.cursor()
-#    cur.execute(f"delete from iris")
-#    conn.commit()
-#    cur.close()
-    # Insertando cada renglon de df respaldo
-#    for i in df_respaldo.index:
-#        query = """
-#        INSERT into iris (SepalLengthCm,SepalWidthCm ,PetalLengthCm ,PetalWidthCm ,Species) values (%s, %s, %s, %s, %s);
-#        """ % (df_respaldo[i]["SepalLengthCm"], df_respaldo[i]["SepalWidthCm"], df_respaldo[i]["PetalLengthCm"],df_respaldo[i]["PetalWidthCm"], df_respaldo[i]["Species"])
-#        single_insert(conn, query)
-####--------------------------------------------------------------------------        
+ 
 
 @app.route('/') #esta madre genera la direccion hacia donde se manda el mensaje 
 def home():
