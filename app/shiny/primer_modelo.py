@@ -21,18 +21,21 @@ from shiny import App, render, ui, reactive
 
 print("generando conexión de aplicación shiny")
 #variable de entorno para pruebas y por si acaso le pone el valor predeterminado
-api_host  = os.getenv("API_HOST", "http://0.0.0.0:8080")#esot no conecta
+api_host  = os.getenv("API_HOST", "http://0.0.0.0:8080")
 print("calculando variables para funcionamiento correcto")
+
 #carga de tabla para establecer ciertos valores para input de entrada
 def carga_data_completa(api_host):
     respuesta = requests.get(api_host+"/")
     data_raw_parametros  = respuesta.json()
     df_parametros        = pd.DataFrame.from_dict(pd.json_normalize(data_raw_parametros), orient="columns")
     return df_parametros
+
 #imagenes necesarios para que funcione la app
 def descarga_imagen(url_,nombre):
     wget.download(url_,out=nombre)
     print(f"imagen {nombre} descargada con exito")
+
 #cuantiles necesarios para hacer mapeo de funcionalidad beta    
 def calcula_cuantiles_beta(df_parametros):
     lista_col = ['sepallengthcm', 'sepalwidthcm', 'petallengthcm', 'petalwidthcm']
@@ -45,6 +48,7 @@ def calcula_cuantiles_beta(df_parametros):
     base_df              = base_df.drop("index",axis=1)
     return base_df    
 
+#pipeline de procesamiento para funcionamiento...
 df_parametros   = carga_data_completa(api_host)    
 df_cuantiles    = calcula_cuantiles_beta(df_parametros)
 dict_cuantiles  = df_cuantiles.set_index(df_cuantiles["respuesta"]).drop("respuesta",axis=1)
@@ -62,11 +66,11 @@ app_ui = ui.page_fluid(
     ui.tags.style("#container {display: flex; flex-direction: column; align-items: center;}"),
     # Main container div
     ui.tags.div(
-        ui.h2("Conjunto de datos Iris Setosa"),
+        ui.h1("Conjunto de datos Iris Setosa"),
         ui.row(
             ui.column(
             6,
-            ui.h4("Historia"),
+            ui.h2("Historia"),
             ui.p("""
                 El conjunto de datos flor Iris o conjunto de datos Iris Setosa de Fisher es un 
                 conjunto de datos multivariante introducido por Ronald Fisher en su artículo de 1936,
@@ -91,82 +95,141 @@ app_ui = ui.page_fluid(
                 ),
             ui.column(
             6,
-            ui.h4("¿Qué puedes hacer con esta aplicación?"),
+            ui.h2("¿Qué puedes hacer con esta aplicación?"),
             ui.p("""
-                HOLAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-                AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-
-                AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                 Con esta aplicación puedes ver los datos, generar modelos de machine learning, 
+                 guardar modelos y probar nuestraa nueva funcionalidad Beta.
                 """
-                 )    
+                 ),  
+            ui.p("""
+                 Esta aplicación tiene 3 partes principales: Datos y modificación, juguemos con machine learning!
+                 y nuestra funcionalidad Beta:
+                """
+                 ),
+            ui.tags.ul(
+                ui.tags.li(
+                    """
+                    Datos y modificación: Aquí puedes ver nuestros datos de florecitas,
+                    buscar alguna flor por su identificador, agregar una flor si es que tienes información,
+                    corregir alguna flor que pienses que tiene mal sus datos y eliminar alguna flor si lo crees necesario.
+                    """
+                ),
+                ui.tags.li(
+                    """
+                    Juguemos con Machine Learning!: Te permite entrenar un modelo de Machine Learning con los datos, 
+                    guardar el modelo si te gustan los resultados, ver que modelos has guardado y predecir con el modelo
+                    que selecciones con los datos que quieras.
+                    """
+                ),
+                ui.tags.li(
+                    """
+                    Funcionalidad Beta: Nuestro equipo de desarrollo tiene que comer, así que esta funcionalidad permite
+                    que puedas seguir disfrutando de este servicio. Lo unico que tienes que hacer, es darnos tus datos :)
+                    """
                 )
+            ),
+        ui.output_plot("imagen_musculosa"),
         ),
-        ui.h2("Datos y modificación"),
-        ui.input_slider("inicio_tabla", "Selecciona a partir de que observacion quieres ver", min=0, max=150, value=0),
-        ui.input_slider("fin_tabla", "Selecciona hasta que observacion quieres ver", min=0, max=150, value=10),
-        ui.output_table("tabla_completa"),
-        ui.input_numeric("id_tabla_filtro", "Escribe el id de la flor que quieres ver", value=10),
-        ui.input_action_button("btn_tabla_filtro","busca la flor!"),
-        ui.output_table("tabla_filtro_id"),
-        ui.h2("¿Quieres enriquecer nuestra base de datos?, puedes meter una observacion"),
-        ui.input_numeric("post_sepallengthcm", "Largo de sepalo", value=round(df_parametros["sepallengthcm"].mean(),1)),
-        ui.input_numeric("post_sepalwidthcm", "Ancho de sepalo", value=round(df_parametros["sepalwidthcm"].mean(),1)),
-        ui.input_numeric("post_petallengthcm", "Largo de petalo", value=round(df_parametros["petallengthcm"].mean(),1)),
-        ui.input_numeric("post_petalwidthcm", "Ancho de petalo", value=round(df_parametros["petalwidthcm"].mean(),1)),
-        ui.input_select(id="post_species", label="Especie de flor:", choices={"Iris-setosa":'Setosa' 
-                                                                                ,"Iris-versicolor":'Versicolor'
-                                                                                , "Iris-virginica":'Virginica'}),
-        ui.input_action_button("btn_post","Enriquece la base!"),
-        ui.output_text_verbatim("post_observacion"),
-        ui.h2("¿Crees que alguna observación está mal?, puedes removerla escribiendo el id de la flor a eliminar"),
-        ui.input_numeric("id_delete", "Escribe el id de la flor que quieres borrar", value=0),
-        ui.input_action_button("btn_delete","Elimina la flor!"),
-        ui.output_text_verbatim("delete_observacion"),
-        ui.h2("También puedes corregir los datos de una flor"),
-        ui.input_numeric("id_patch", "Escribe el id de la flor que quieres corregir", value=0),
-        ui.input_numeric("patch_sepallengthcm", "Largo de sepalo", value=0),
-        ui.input_numeric("patch_sepalwidthcm", "Ancho de sepalo", value=0),
-        ui.input_numeric("patch_petallengthcm", "Largo de petalo", value=0),
-        ui.input_numeric("patch_petalwidthcm", "Ancho de petalo", value=0),
-        ui.input_select(id="patch_species", label="Especie de flor:", choices={"Iris-setosa":'Setosa' 
-                                                                                ,"Iris-versicolor":'Versicolor'
-                                                                                , "Iris-virginica":'Virginica'}),
-        ui.input_action_button("btn_patch","corrige la flor!"),                                                                        
-        ui.output_text_verbatim("patch_observacion"),                                                                        
-        ui.h2("Seleccion de modelo a entrenar"),
-        ui.input_select(id="opcion", label="Modelo:", choices={"rf":"Random Forest","xgb":"XGBOOST"}),
-        ui.input_action_button("btn","genera el modelo!"),
-        ui.h2("Métricas y matriz de confusión del modelo "),
-        ui.output_plot("viz"),
-        ui.output_table("table_data"),
-        ui.h2("¿Te gusta lo que ves?, entonces guarda el modelo"),
-        ui.input_text("nombre_modelo", "Aqui pon el nombre del modelo", placeholder="AQUI PONES EL NOMBRE"),
-        ui.input_action_button("btn_save","guardar modelo"),
-        ui.output_text_verbatim("guarda_modelo"),
-        ui.h2("¿Quieres ver que modelos has guardado?, aprieta el botón de buscar modelos"),
-        ui.input_action_button("btn_muestra_modelos","Buscar modelos!"),
-        ui.output_table("tabla_modelos"),
+        ),
+        ui.h1("Datos y modificación"),
+        ui.output_plot("imagen_comarca"),
+        ui.row(
+            ui.column(
+            6,
 
-        ui.h2("Carga un modelo para probar metiendo datos!"),
-        ui.input_text("nombre_modelo_prueba", "Aqui pon el nombre del modelo que quieres cargar", placeholder="AQUI PONES EL NOMBRE"),
-        ui.h2("Mete datos y veamos que dice el modelo!"),
-        ui.input_numeric("predict_sepallengthcm", "Largo de sepalo", value=0),
-        ui.input_numeric("predict_sepalwidthcm", "Ancho de sepalo", value=0),
-        ui.input_numeric("predict_petallengthcm", "Largo de petalo", value=0),
-        ui.input_numeric("predict_petalwidthcm", "Ancho de petalo", value=0),
-        ui.input_action_button("btn_carga_predict","Predice con el modelo!"),
-        ui.output_text_verbatim("carga_predice"),
-        ui.h1("FUNCIONALIDAD BETA: Responde 4 simples preguntas sobre tu personalidad y te decimos que tipo de flor eres. Selecciona del 1 al 10 que tan de acuerdo estás con la pregunta (1 es nada y 10 es muy de acuerdo)"),
-        ui.h4("Ojo: No guardamos datos, solo se los vendemos a algunos patrocinadores que respetan tu privacidad...."),
-        ui.h2("Pregunta 1"),
-        ui.input_slider("pregunta_1", "Selecciona a partir de que observacion quieres ver", min=1, max=10, value=1),
-        ui.h2("Pregunta 2"),
-        ui.input_slider("pregunta_2", "Selecciona a partir de que observacion quieres ver", min=1, max=10, value=1),
-        ui.h2("Pregunta 3"),
-        ui.input_slider("pregunta_3", "Selecciona a partir de que observacion quieres ver", min=1, max=10, value=1),
-        ui.h2("Pregunta 4"),
-        ui.input_slider("pregunta_4", "Selecciona a partir de que observacion quieres ver", min=1, max=10, value=1),
+            ui.h2("Veamos los datos. Cada flor tiene un id que la identifica."),
+            ui.input_slider("inicio_tabla", "Selecciona a partir de que observacion quieres ver", min=0, max=150, value=0),
+            ui.input_slider("fin_tabla", "Selecciona hasta que observacion quieres ver", min=0, max=150, value=10),
+            ui.output_table("tabla_completa"),
+            ui.h2("Busca una flor por medio de su id!"),
+            ui.input_numeric("id_tabla_filtro", "Escribe el id de la flor que quieres ver", value=10),
+            ui.input_action_button("btn_tabla_filtro","busca la flor!"),
+            ui.output_table("tabla_filtro_id"),
+
+            ui.h2("¿Crees que alguna observación está mal?. Puedes removerla escribiendo el id de la flor a eliminar."),
+            ui.input_numeric("id_delete", "Escribe el id de la flor que quieres borrar", value=0),
+            ui.input_action_button("btn_delete","Elimina la flor!"),
+            ui.output_text_verbatim("delete_observacion"),
+            ),
+            ui.column(
+            6,
+
+            ui.h2("¿Quieres enriquecer nuestra base de datos?. Puedes meter una observación."),
+            ui.input_numeric("post_sepallengthcm", "Largo de sepalo", value=round(df_parametros["sepallengthcm"].mean(),1)),
+            ui.input_numeric("post_sepalwidthcm", "Ancho de sepalo", value=round(df_parametros["sepalwidthcm"].mean(),1)),
+            ui.input_numeric("post_petallengthcm", "Largo de petalo", value=round(df_parametros["petallengthcm"].mean(),1)),
+            ui.input_numeric("post_petalwidthcm", "Ancho de petalo", value=round(df_parametros["petalwidthcm"].mean(),1)),
+            ui.input_select(id="post_species", label="Especie de flor:", choices={"Iris-setosa":'Setosa' 
+                                                                                    ,"Iris-versicolor":'Versicolor'
+                                                                                    , "Iris-virginica":'Virginica'}),
+            ui.input_action_button("btn_post","Enriquece la base!"),
+            ui.output_text_verbatim("post_observacion"),
+            
+            ui.h2("También puedes corregir los datos de una flor por medio de su id"),
+            ui.input_numeric("id_patch", "Escribe el id de la flor que quieres corregir", value=0),
+            ui.input_numeric("patch_sepallengthcm", "Largo de sepalo", value=0),
+            ui.input_numeric("patch_sepalwidthcm", "Ancho de sepalo", value=0),
+            ui.input_numeric("patch_petallengthcm", "Largo de petalo", value=0),
+            ui.input_numeric("patch_petalwidthcm", "Ancho de petalo", value=0),
+            ui.input_select(id="patch_species", label="Especie de flor:", choices={"Iris-setosa":'Setosa' 
+                                                                                    ,"Iris-versicolor":'Versicolor'
+                                                                                    , "Iris-virginica":'Virginica'}),
+            ui.input_action_button("btn_patch","corrige la flor!"),                                                                        
+            ui.output_text_verbatim("patch_observacion"),
+            )
+        ),      
+
+        ui.h1("Juguemos con Machine Learning"),
+        ui.output_plot("imagen_juguemos"),
+        ui.row(
+            ui.column(
+            6,
+            ui.h2("Entrena un modelo!"),
+            ui.input_select(id="opcion", label="Modelo:", choices={"rf":"Random Forest","xgb":"XGBOOST"}),
+            ui.input_action_button("btn","genera el modelo!"),
+            ui.h2("Métricas y matriz de confusión del modelo "),
+            ui.output_plot("viz"),
+            ui.output_table("table_data")
+                      ) 
+                    ,
+        
+            ui.column(
+             6, 
+            ui.h2("¿Te gusta lo que ves?. Entonces guarda el modelo."),
+            ui.input_text("nombre_modelo", "Aqui pon el nombre del modelo", placeholder="AQUI PONES EL NOMBRE"),
+            ui.input_action_button("btn_save","guardar modelo"),
+            ui.output_text_verbatim("guarda_modelo"),
+
+            ui.h2("¿Quieres ver que modelos has guardado?. Aprieta el botón de buscar modelos"),
+            ui.input_action_button("btn_muestra_modelos","Buscar modelos!"),
+            ui.output_table("tabla_modelos"),
+
+            ui.h2("Carga un modelo para probar metiendo datos!"),
+            ui.input_text("nombre_modelo_prueba", "Aqui pon el nombre del modelo que quieres cargar", placeholder="AQUI PONES EL NOMBRE"),
+            ui.h2("Mete datos y veamos que dice el modelo!"),
+            ui.input_numeric("predict_sepallengthcm", "Largo de sepalo", value=0),
+            ui.input_numeric("predict_sepalwidthcm", "Ancho de sepalo", value=0),
+            ui.input_numeric("predict_petallengthcm", "Largo de petalo", value=0),
+            ui.input_numeric("predict_petalwidthcm", "Ancho de petalo", value=0),
+            ui.input_action_button("btn_carga_predict","Predice con el modelo!"),
+            ui.output_text_verbatim("carga_predice")   
+            )
+        ),
+
+        ui.h1("BETA: ¿Qué flor eres de acuerdo a tu personalidad?"),
+        ui.output_plot("imagen_beta"),
+        ui.h3(" Selecciona del 1 al 10 que tan de acuerdo estás con la afirmación (1 es nada y 10 es muy de acuerdo)"),
+        ui.h5("Ojo: No guardamos datos, solo se los vendemos a algunos patrocinadores que respetan tu privacidad...."),
+        ui.h2("No te causa tristeza ver perros callejeros"),
+        ui.input_slider("pregunta_1", "", min=1, max=10, value=1),
+        ui.h2("La pizza debe llevar piña a fuerza, para más placer "),
+        ui.input_slider("pregunta_2", "", min=1, max=10, value=1),
+        ui.h2("Eres de los raritos que piensan que R es mejor que Python"),
+        ui.input_slider("pregunta_3", "", min=1, max=10, value=1),
+        ui.h2("Tienes problemas cognitivos, para ti las quesadillas no deben llevar queso"),
+        ui.input_slider("pregunta_4", "", min=1, max=10, value=1),
         ui.input_action_button("btn_beta","Dime que flor soy!"),
+        ui.output_plot("imagen_tipo_flor"),
         ui.output_text_verbatim("muestra_tipo_flor"),
     id="container")
 )
@@ -201,7 +264,7 @@ def server(input, output, session):
         modelo              = diccionario_modelos[input.opcion()]
         modelo.fit(X_train, y_train)
         #se genera validacion de prueba
-        target_names        = ['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']
+        target_names        = ['setosa', 'versicolor', 'virginica']
         #reporte de resultados
         y_pred              = modelo.predict(X_test)
         resultados          = pd.DataFrame(classification_report(y_test, y_pred, target_names=target_names, output_dict=True))
@@ -239,22 +302,59 @@ def server(input, output, session):
     @reactive.event(input.btn_beta)
     def muestra_tipo_flor():
         pred   = tipo_flor()
+        mensaje = {'Iris-setosa':"""
+                                 Todo muy bien, te consideras un buen ciudadano y lo eres.
+                                 Eres alguien muy flexible y triunfador. Saludos jaja.
+                                 Tienes petalos cortos.
+                                 
+                                 """,
+                   'Iris-versicolor':"""
+                                     Eres una persona que está aprendiendo del mundo, sigue así.
+                                     Normalmente te molesta que la gente haga sonidos cuando come.
+                                     Tienes petalos medianos.
+                                     """,
+                   'Iris-virginica': """
+                                     Claramente eres una persona que no le tiene respeto a dios,
+                                     ¿Cómo que prefieres R a Python por deus?. Esperamos que algún
+                                     día retomes el camino, te recomendamos ir a terapia. Tienes petalos largos.
+                                     """
+                   }
+        mensaje = mensaje[pred]
+        return f"""Según nuestro poderoso modelo de I.A, eres una {pred}! 
+                  {mensaje} """   
+
+    @output
+    @render.plot
+    @reactive.event(input.btn_beta)
+    def imagen_tipo_flor(): 
+        pred   = tipo_flor()
+        flor   = pred.split("-")[1]
+        img    = mpimg.imread(f'./images/{flor}.png')
+        fig, ax = plt.subplots()
+        ax2     = plt.imshow(img)
+        plt.axis('off')
         
-        return f"Según nuestro poderoso modelo de I.A eres una {pred} !"    
+        return fig     
     
     @output
     @render.table
     @reactive.event(input.btn_muestra_modelos)
     def tabla_modelos():
-        lista_modelos = glob.glob('./*.pkl')
-        lista_tiempos = []
-        df_modelos    = pd.DataFrame();
-        df_modelos["direccion_modelo"] = lista_modelos
-        df_modelos["nombre_modelo"]    = [i.replace(".pkl","").replace("./","") for i in df_modelos["direccion_modelo"]]
-        for i in lista_modelos:lista_tiempos.append(datetime.datetime.fromtimestamp(os.path.getctime(i)))
-        df_modelos["fecha creación"]   = lista_tiempos
-
-        return df_modelos.drop("direccion_modelo",axis=1)
+        try:
+            lista_modelos = glob.glob('./*.pkl')
+            lista_tiempos = []
+            df_modelos    = pd.DataFrame();
+            df_modelos["direccion_modelo"] = lista_modelos
+            df_modelos["nombre_modelo"]    = [i.replace(".pkl","").replace("./","") for i in df_modelos["direccion_modelo"]]
+            for i in lista_modelos:lista_tiempos.append(datetime.datetime.fromtimestamp(os.path.getctime(i)))
+            df_modelos["fecha creación"]   = lista_tiempos
+            df_modelos                     = df_modelos.drop("direccion_modelo",axis=1)
+            if len(df_modelos) ==0:
+                df_modelos  = pd.DataFrame(columns=["no has generado ningun modelo :("])
+        except Exception as e:
+            df_modelos = pd.DataFrame(columns=["no has generado ningun modelo :("])
+            
+        return df_modelos
 
     @output
     @render.text
@@ -313,6 +413,45 @@ def server(input, output, session):
         plt.axis('off')
         
         return fig
+    @output
+    @render.plot
+    def imagen_beta(): 
+        img  = mpimg.imread('./images/tipo.png')
+        fig, ax = plt.subplots()
+        ax2     = plt.imshow(img)
+        plt.axis('off')
+        
+        return fig    
+
+    @output
+    @render.plot
+    def imagen_musculosa(): 
+        img  = mpimg.imread('./images/musculosa.png')
+        fig, ax = plt.subplots()
+        ax2     = plt.imshow(img)
+        plt.axis('off')
+        
+        return fig
+
+    @output
+    @render.plot
+    def imagen_juguemos(): 
+        img  = mpimg.imread('./images/juguemos.png')
+        fig, ax = plt.subplots()
+        ax2     = plt.imshow(img)
+        plt.axis('off')
+        
+        return fig   
+
+    @output
+    @render.plot
+    def imagen_comarca(): 
+        img  = mpimg.imread('./images/comarca.png')
+        fig, ax = plt.subplots()
+        ax2     = plt.imshow(img)
+        plt.axis('off')
+        
+        return fig        
     
     @output
     @render.table
@@ -367,27 +506,44 @@ def server(input, output, session):
     @reactive.event(input.btn_patch)
     def patch_observacion():
         id_filtro = int(input.id_patch())
-        data_dic = {
-            "sepallengthcm"  : input.patch_sepallengthcm(),
-            "sepalwidthcm"   : input.patch_sepalwidthcm(),
-            "petallengthcm"  : input.patch_petallengthcm(), 
-            "petalwidthcm"   : input.patch_petalwidthcm(),
-            "species"        : input.patch_species()
-            }
-        print(data_dic)
-        data_dic = json.dumps(data_dic)
-        data_dic = f"[{data_dic}]"
-        requests.patch(api_host+"/iris",data = data_dic,params = {"id":id_filtro})
+
+        respuesta = requests.get(api_host+"/")
+        data_raw  = respuesta.json()
+        df        = pd.DataFrame.from_dict(pd.json_normalize(data_raw), orient="columns")
+
+        if id_filtro not in df["id"].unique():
+            mensaje = "no hay ninguna flor con ese id :("
+        else:
+            data_dic = {
+                "sepallengthcm"  : input.patch_sepallengthcm(),
+                "sepalwidthcm"   : input.patch_sepalwidthcm(),
+                "petallengthcm"  : input.patch_petallengthcm(), 
+                "petalwidthcm"   : input.patch_petalwidthcm(),
+                "species"        : input.patch_species()
+                }
+            print(data_dic)
+            data_dic = json.dumps(data_dic)
+            data_dic = f"[{data_dic}]"
+            requests.patch(api_host+"/iris",data = data_dic,params = {"id":id_filtro})
+            mensaje  = f"La flor con el id:'{id_filtro}' se modificó con éxito"
            
-        return f"La flor con el id:'{id_filtro}' se modificó con éxito"    
+        return mensaje    
 
     @output
     @render.text
     @reactive.event(input.btn_delete)
     def delete_observacion():
         id_filtro = int(input.id_delete())
-        requests.delete(api_host+"/iris",params = {"id":id_filtro})
-        return f"La flor con el id: '{id_filtro}' se ha removido con éxito"    
+
+        respuesta = requests.get(api_host+"/")
+        data_raw  = respuesta.json()
+        df        = pd.DataFrame.from_dict(pd.json_normalize(data_raw), orient="columns")
+        if id_filtro not in df["id"].unique():
+            mensaje = "no hay ninguna flor con ese id :("
+        else:
+            requests.delete(api_host+"/iris",params = {"id":id_filtro})
+            mensaje = f"La flor con el id: '{id_filtro}' se ha removido con éxito"
+        return mensaje    
 
     @output
     @render.table
@@ -398,4 +554,3 @@ def server(input, output, session):
 
 # Connect everything
 app = App(app_ui, server)
-
