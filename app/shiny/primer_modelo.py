@@ -12,15 +12,17 @@ import os
 import requests
 import json
 import pickle
-####modulos
+import glob
 import wget
+import datetime
 #estos son los necesarios para shiny
 from shiny import App, render, ui, reactive
 
 
 
 #variable de entorno para pruebas y por si acaso le pone el valor predeterminado
-api_host  = os.getenv("API_HOST", "http://0.0.0.0:8080")#esot no conecta
+#api_host  = os.getenv("API_HOST", "http://0.0.0.0:8080")#esot no conecta
+api_host   = "http://0.0.0.0:8080"
 #carga de tabla para establecer ciertos valores para input de entrada
 def carga_data_completa(api_host):
     respuesta = requests.get(api_host+"/")
@@ -75,7 +77,7 @@ app_ui = ui.page_fluid(
                 ),
             ui.column(
             6,
-            ui.h4("Qué puedes hacer con esta aplicación?"),
+            ui.h4("¿Qué puedes hacer con esta aplicación?"),
             ui.p("""
                 HOLAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
                 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -92,7 +94,7 @@ app_ui = ui.page_fluid(
         ui.input_numeric("id_tabla_filtro", "Escribe el id de la flor que quieres ver", value=10),
         ui.input_action_button("btn_tabla_filtro","busca la flor!"),
         ui.output_table("tabla_filtro_id"),
-        ui.h2("Quieres enriquecer nuestra base de datos?, puedes meter una observacion"),
+        ui.h2("¿Quieres enriquecer nuestra base de datos?, puedes meter una observacion"),
         ui.input_numeric("post_sepallengthcm", "Largo de sepalo", value=round(df_parametros["sepallengthcm"].mean(),1)),
         ui.input_numeric("post_sepalwidthcm", "Ancho de sepalo", value=round(df_parametros["sepalwidthcm"].mean(),1)),
         ui.input_numeric("post_petallengthcm", "Largo de petalo", value=round(df_parametros["petallengthcm"].mean(),1)),
@@ -102,22 +104,48 @@ app_ui = ui.page_fluid(
                                                                                 , "Iris-virginica":'Virginica'}),
         ui.input_action_button("btn_post","Enriquece la base!"),
         ui.output_text_verbatim("post_observacion"),
+        ui.h2("¿Crees que alguna observación está mal?, puedes removerla escribiendo el id de la flor a eliminar"),
+        ui.input_numeric("id_delete", "Escribe el id de la flor que quieres borrar", value=0),
+        ui.input_action_button("btn_delete","Elimina la flor!"),
+        ui.output_text_verbatim("delete_observacion"),
+        ui.h2("También puedes corregir los datos de una flor"),
+        ui.input_numeric("id_patch", "Escribe el id de la flor que quieres corregir", value=0),
+        ui.input_numeric("patch_sepallengthcm", "Largo de sepalo", value=0),
+        ui.input_numeric("patch_sepalwidthcm", "Ancho de sepalo", value=0),
+        ui.input_numeric("patch_petallengthcm", "Largo de petalo", value=0),
+        ui.input_numeric("patch_petalwidthcm", "Ancho de petalo", value=0),
+        ui.input_select(id="patch_species", label="Especie de flor:", choices={"Iris-setosa":'Setosa' 
+                                                                                ,"Iris-versicolor":'Versicolor'
+                                                                                , "Iris-virginica":'Virginica'}),
+        ui.input_action_button("btn_patch","corrige la flor!"),                                                                        
+        ui.output_text_verbatim("patch_observacion"),                                                                        
         ui.h2("Seleccion de modelo a entrenar"),
         ui.input_select(id="opcion", label="Modelo:", choices={"rf":"Random Forest","xgb":"XGBOOST"}),
         ui.input_action_button("btn","genera el modelo!"),
         ui.h2("Métricas y matriz de confusión del modelo "),
         ui.output_plot("viz"),
         ui.output_table("table_data"),
-        ui.h2("Te gusta lo que ves?, entonces guarda el modelo"),
+        ui.h2("¿Te gusta lo que ves?, entonces guarda el modelo"),
         ui.input_text("nombre_modelo", "Aqui pon el nombre del modelo", placeholder="AQUI PONES EL NOMBRE"),
         ui.input_action_button("btn_save","guardar modelo"),
         ui.output_text_verbatim("guarda_modelo"),
+        ui.h2("¿Quieres ver que modelos has guardado?, aprieta el botón de buscar modelos"),
+        ui.input_action_button("btn_muestra_modelos","Buscar modelos!"),
+        ui.output_table("tabla_modelos"),
+
+        ui.h2("Carga un modelo para probar metiendo datos!"),
+        ui.input_text("nombre_modelo_prueba", "Aqui pon el nombre del modelo que quieres cargar", placeholder="AQUI PONES EL NOMBRE"),
+        ui.h2("Mete datos y veamos que dice el modelo!"),
+        ui.input_numeric("predict_sepallengthcm", "Largo de sepalo", value=0),
+        ui.input_numeric("predict_sepalwidthcm", "Ancho de sepalo", value=0),
+        ui.input_numeric("predict_petallengthcm", "Largo de petalo", value=0),
+        ui.input_numeric("predict_petalwidthcm", "Ancho de petalo", value=0),
+        ui.input_action_button("btn_carga_predict","Predice con el modelo!"),
+        ui.output_text_verbatim("carga_predice"),
+
+
     id="container")
 )
-
-
-
-
 
 
 # logica del servidor, esta madre es el backend de la app
@@ -133,12 +161,11 @@ def server(input, output, session):
         respuesta = requests.get(api_host+"/")
         data_raw  = respuesta.json()
         df        = pd.DataFrame.from_dict(pd.json_normalize(data_raw), orient="columns")
-        df.columns = [i.lower() for i in df.columns]
 
         #preprocesamiento de datos
         dic        = {'Iris-setosa':0,'Iris-versicolor':1,'Iris-virginica':2}
         df["species_codi"]  = df["species"].map(dic)
-        X                   = df.drop(["species","species_codi"],axis=1)#df[["sepallengthcm","petallengthcm"]]
+        X                   = df.drop(["species","species_codi","id"],axis=1)#df[["sepallengthcm","petallengthcm"]]
         y                   = df["species_codi"]
         #division en train y test
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.3, random_state=0)
@@ -154,6 +181,20 @@ def server(input, output, session):
         df_cm               = pd.DataFrame(confusion_matrix(y_test, y_pred),index=target_names,columns=target_names)
 
         return resultados, df_cm, modelo
+    
+    @output
+    @render.table
+    @reactive.event(input.btn_muestra_modelos)
+    def tabla_modelos():
+        lista_modelos = glob.glob('./*.pkl')
+        lista_tiempos = []
+        df_modelos    = pd.DataFrame();
+        df_modelos["direccion_modelo"] = lista_modelos
+        df_modelos["nombre_modelo"]    = [i.replace(".pkl","").replace("./","") for i in df_modelos["direccion_modelo"]]
+        for i in lista_modelos:lista_tiempos.append(datetime.datetime.fromtimestamp(os.path.getctime(i)))
+        df_modelos["fecha creación"]   = lista_tiempos
+
+        return df_modelos.drop("direccion_modelo",axis=1)
 
     @output
     @render.text
@@ -163,6 +204,34 @@ def server(input, output, session):
         nombre = f"{input.nombre_modelo()}.pkl"
         pickle.dump(modelo,open(nombre,'wb'))
         return f"tu modelo: '{input.nombre_modelo()}' se ha guardado con éxito"
+
+    @output
+    @render.text
+    @reactive.event(input.btn_carga_predict)
+    def carga_predice():
+        nombre_modelo_origin = input.nombre_modelo_prueba()
+        nombre_modelo = f"{nombre_modelo_origin}.pkl"
+        dic           = {0:'Iris-setosa',1:'Iris-versicolor',2:'Iris-virginica'}
+        try:
+            #cargamos el modelo
+            modelo_cargado = pickle.load(open(nombre_modelo, "rb"))
+            #generamos nuestro dataset para predecir
+            df_pred        = pd.DataFrame()
+            df_pred["sepallengthcm"] = [input.predict_sepallengthcm()]
+            df_pred["sepalwidthcm"] =  [input.predict_sepalwidthcm()]
+            df_pred["petallengthcm"] = [input.predict_petallengthcm()]
+            df_pred["petalwidthcm"] =  [input.predict_petalwidthcm()] 
+            #predecimos clase 
+            prediccion     = modelo_cargado.predict(df_pred)
+            #tenemos que predecir probabildiad tambien 
+            proba          = str(round(modelo_cargado.predict_proba(df_pred)[0][prediccion[0]],2)*100)[0:4]
+            pred           = dic[prediccion[0]]
+            return f"Modelo {nombre_modelo_origin} predijo que es de la clase {pred} con una probabilidad del {proba} %!"
+        except Exception as e:
+            print(e)
+            return "No hay ningun modelo guardado con ese nombre :("
+            
+        
         
     # Chart logic
     @output
@@ -241,6 +310,33 @@ def server(input, output, session):
         requests.post(api_host+"/iris",data=data_dic)
            
         return f"tu flor se guardó con el id: '{id_guardado}'"
+
+    @output
+    @render.text
+    @reactive.event(input.btn_patch)
+    def patch_observacion():
+        id_filtro = int(input.id_patch())
+        data_dic = {
+            "sepallengthcm"  : input.patch_sepallengthcm(),
+            "sepalwidthcm"   : input.patch_sepalwidthcm(),
+            "petallengthcm"  : input.patch_petallengthcm(), 
+            "petalwidthcm"   : input.patch_petalwidthcm(),
+            "species"        : input.patch_species()
+            }
+        print(data_dic)
+        data_dic = json.dumps(data_dic)
+        data_dic = f"[{data_dic}]"
+        requests.patch(api_host+"/iris",data = data_dic,params = {"id":id_filtro})
+           
+        return f"La flor con el id:'{id_filtro}' se modificó con éxito"    
+
+    @output
+    @render.text
+    @reactive.event(input.btn_delete)
+    def delete_observacion():
+        id_filtro = int(input.id_delete())
+        requests.delete(api_host+"/iris",params = {"id":id_filtro})
+        return f"La flor con el id: '{id_filtro}' se ha removido con éxito"    
 
     @output
     @render.table

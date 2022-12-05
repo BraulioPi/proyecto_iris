@@ -14,5 +14,5 @@ seaborn
 matplotlib
 shiny
 requests
-pickle
 wget
+datetime
