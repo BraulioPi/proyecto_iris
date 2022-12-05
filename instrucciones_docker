@@ -4,7 +4,8 @@
 #si quiero eliminar un contenedor en especifico es docker rm app_{nombre del servicio}
 #si quiero ver los contenedores activos docker ps
 #si quiero ver los logs de cada servicio docker-compose logs -f servicio
-#si quiero bajar todo de madrazo es docker-compose down
+#si quiero bajar todo de madrazo es docker-compose down (mata todos los containers)
+#sudo docker ps -a para ver todos los contenedores
 #para ver mis imagenes docker images
 #para eliminar imagen docker rmi nombre imagen
 #para ver volumen sudo docker volume ls

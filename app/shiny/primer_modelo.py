@@ -21,8 +21,8 @@ from shiny import App, render, ui, reactive
 
 
 #variable de entorno para pruebas y por si acaso le pone el valor predeterminado
-#api_host  = os.getenv("API_HOST", "http://0.0.0.0:8080")#esot no conecta
-api_host   = "http://0.0.0.0:8080"
+api_host  = os.getenv("API_HOST", "http://0.0.0.0:8080")#esot no conecta
+
 #carga de tabla para establecer ciertos valores para input de entrada
 def carga_data_completa(api_host):
     respuesta = requests.get(api_host+"/")
@@ -247,16 +247,16 @@ def server(input, output, session):
     @output
     @render.plot
     def imagen_florecita():
-        url_ = "https://camo.githubusercontent.com/bb83e831a860664959470e38c56bdce981c84687eafe04346d112be09a8c0227/68747470733a2f2f692e696d6775722e636f6d2f505171594761572e706e67"
-        try:
-            os.remove("florecitas.png")
-            descarga_imagen(url_,nombre="florecitas.png")
-            print("descargando imagen necesaria")
-        except Exception as e:
-            print("no hay imagen a borrar")  
-            descarga_imagen(url_,nombre="florecitas.png")
-            print("descargando imagen necesaria")  
-        img  = mpimg.imread('florecitas.png')
+        #url_ = "https://camo.githubusercontent.com/bb83e831a860664959470e38c56bdce981c84687eafe04346d112be09a8c0227/68747470733a2f2f692e696d6775722e636f6d2f505171594761572e706e67"
+        #try:
+        #    os.remove("florecitas.png")
+        #    descarga_imagen(url_,nombre="florecitas.png")
+        #    print("descargando imagen necesaria")
+        #except Exception as e:
+        #    print("no hay imagen a borrar")  
+        #    descarga_imagen(url_,nombre="florecitas.png")
+        #    print("descargando imagen necesaria")  
+        img  = mpimg.imread('./images/florecitas.png')
         fig, ax = plt.subplots()
         ax2     = plt.imshow(img)
         plt.axis('off')

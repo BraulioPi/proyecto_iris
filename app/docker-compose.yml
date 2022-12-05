@@ -28,5 +28,7 @@ services:
       - 4999:4999 #compu-contenedor
     depends_on:
       - "web"  
+    volumes:
+       - ./shiny/images:/app/images
 volumes:
   pg_api:
