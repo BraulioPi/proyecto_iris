@@ -2,7 +2,8 @@
 Instrucciones para ejecución:
 * Solo necesitas posicionarte en la terminal en la carpeta app
 * Ejecutar el archivo .sh   *start.sh* (de preferencia sudo ./start.sh )
-* El archivo .sh tiene un orden de ejecución:
+* Listo, este archivo genera todo e inicializa el programa.
+El archivo .sh tiene un orden de ejecución:
 * generate_iris: Genera la base de datos iris necesaria para todo.
 * Corre el docker-compose para contruir las imagenes de cada servicio y levanta los contenedores.
 * Tarda aproximandamente 4 minutos en construir y levantar todo, así que un poquito de paciencia.
