@@ -184,8 +184,11 @@ app_ui = ui.page_fluid(
         ui.row(
             ui.column(
             6,
-            ui.h2("Entrena un modelo!"),
-            ui.input_select(id="opcion", label="Modelo:", choices={"rf":"Random Forest","xgb":"XGBOOST"}),
+            ui.h2("Entrena un modelo XGBOOST!"),
+            ui.h4("Puedes jugar con los hiperparámetros"),
+            ui.input_slider("max_depth", "Valor para max depth", min=2, max=10, value=6),
+            ui.input_slider("min_child_weight", "Valor para min child weight", min=0, max=10, value=0),
+            ui.input_slider("n_estimators", "Valor para n estimators", min=50, max=500, value=100),
             ui.input_action_button("btn","genera el modelo!"),
             ui.h2("Métricas y matriz de confusión del modelo "),
             ui.output_plot("viz"),
@@ -234,20 +237,13 @@ app_ui = ui.page_fluid(
     id="container")
 )
 
-    
-        
-        
-        
-    
+            
 # logica del servidor, esta madre es el backend de la app
 def server(input, output, session):
 
     @reactive.Calc
     @reactive.event(input.btn)
     def carga_procesa_data_train():
-        diccionario_modelos = {"rf":RandomForestClassifier(random_state=0),
-                                "xgb":xg.XGBClassifier(random_state =0)
-                                }
         #cargando los datos desde la API
         respuesta = requests.get(api_host+"/")
         data_raw  = respuesta.json()
@@ -261,7 +257,9 @@ def server(input, output, session):
         #division en train y test
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.3, random_state=0)
         #se hace fit de modelos
-        modelo              = diccionario_modelos[input.opcion()]
+        modelo              = xg.XGBClassifier(random_state =0,max_depth =input.max_depth()
+                                               ,n_estimators=input.n_estimators(),
+                                               min_child_weight = input.min_child_weight())#diccionario_modelos[input.opcion()]
         modelo.fit(X_train, y_train)
         #se genera validacion de prueba
         target_names        = ['setosa', 'versicolor', 'virginica']

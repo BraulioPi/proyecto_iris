@@ -11,3 +11,4 @@
 #para ver volumen sudo docker volume ls
 #docker volume remove nombre
 #hay que borrar volumnes, imagenes, contenedores
+#sudo ./start.sh

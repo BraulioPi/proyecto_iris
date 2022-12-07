@@ -20,7 +20,7 @@ pip install scikit-learn
 pip install pandas
 pip install numpy
 python generate_iris.py
-docker-compose up -d
+docker-compose up 
 
 if [ $respuesta = "y" ]; then 
     deactivate 
